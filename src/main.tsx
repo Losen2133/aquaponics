@@ -7,7 +7,7 @@ import {
   Navigate,
 } from 'react-router-dom';
 import App from './App';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/Dashboard/Dashboard';
 import Camera from './pages/Camera'
 import About from './pages/About';
 import Maintenance from './pages/Maintenance';
@@ -24,7 +24,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'dashboard',
-        element: <Dashboard />
+        element: <Dashboard />,
       },
       {
         path: 'camera-feed',
