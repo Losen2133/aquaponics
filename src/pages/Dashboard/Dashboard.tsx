@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import mqtt from "mqtt";
 import TitleSetter from "@/components/utilities/titlesetter";
 import LightLevel from "@/components/LightLevel";
 import type { LightLevelResponse } from "@/interfaces/interfaces";
@@ -7,32 +8,46 @@ const Dashboard = () => {
   const [data, setData] = useState<LightLevelResponse | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://192.168.93.240/ws");
+    // Replace this with the actual Orange Pi IP
+    const brokerUrl = "ws://localhost:9001"; // MQTT over WebSocket
 
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-    };
+    const client = mqtt.connect(brokerUrl);
 
-    ws.onmessage = (event) => {
+    client.on("connect", () => {
+      console.log("✅ MQTT connected");
+
+      // Subscribe to all LDR sensors
+      client.subscribe("sensor/ldr/#", (err) => {
+        if (err) {
+          console.error("❌ Failed to subscribe:", err);
+        } else {
+          console.log("📡 Subscribed to sensor/ldr/#");
+        }
+      });
+    });
+
+    client.on("message", (topic, message) => {
       try {
-        const message: LightLevelResponse = JSON.parse(event.data);
-        // console.log("WebSocket LDR Data:", message);
-        setData(message);
+        const deviceId = topic.split("/")[2]; // sensor/ldr/<deviceId>
+        const json: LightLevelResponse = JSON.parse(message.toString());
+        console.log(`Message from ${deviceId}:`, json);
+        setData(json);
       } catch (err) {
-        // console.error("Invalid WebSocket JSON:", event.data);
+        console.error("❌ Invalid JSON received:", message.toString());
       }
-    };
+    });
 
-    ws.onerror = (err) => {
-      console.error("WebSocket error:", err);
-    };
 
-    ws.onclose = () => {
-      console.warn("WebSocket connection closed");
-    };
+    client.on("error", (err) => {
+      console.error("MQTT connection error:", err);
+    });
+
+    client.on("close", () => {
+      console.warn("🔌 MQTT connection closed");
+    });
 
     return () => {
-      ws.close();
+      client.end();
     };
   }, []);
 
