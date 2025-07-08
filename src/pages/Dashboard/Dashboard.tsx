@@ -6,7 +6,6 @@ import TitleSetter from "@/components/utilities/titlesetter"
 import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Lightbulb, Thermometer, Droplets, Activity, Zap, Wind, Gauge, FlaskConical, Waves } from "lucide-react"
 
 interface SensorData {
   light?: { value: number; light: number; timestamp: Date }
@@ -107,16 +106,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
       <TitleSetter title="Aquaponics Dashboard" />
 
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
+      <div className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Aquaponics Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-400">Real-time monitoring of your aquaponics system</p>
+              <h1 className="text-3xl font-bold text-gray-900">Aquaponics Dashboard</h1>
+              <p className="text-gray-600">Real-time monitoring of your aquaponics system</p>
             </div>
             <div className="flex items-center gap-4">
               <Badge variant={connectionStatus === "connected" ? "default" : "destructive"} className="gap-2">
@@ -136,10 +135,10 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {/* System Overview */}
-        <Card className="mb-8 bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
+        <Card className="mb-8 bg-white/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+              <span className="text-blue-500">📊</span>
               System Overview
             </CardTitle>
           </CardHeader>
@@ -152,7 +151,7 @@ export default function Dashboard() {
                 <div className="text-sm text-gray-600">Active Sensors</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className={connectionStatus === "connected" ? "text-2xl font-bold text-green-600" : "text-2xl font-bold text-red-600"} text-2xl font-bold>
                   {connectionStatus === "connected" ? "Online" : "Offline"}
                 </div>
                 <div className="text-sm text-gray-600">System Status</div>
@@ -170,95 +169,104 @@ export default function Dashboard() {
         </Card>
 
         {/* Sensor Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <SensorCard
             title="Light Level"
             value={sensorData.light?.light}
             unit=" lux"
-            icon={<Lightbulb className="h-4 w-4" />}
+            icon={isConnected("light") ? <span className="text-2xl">💡</span>: null}
             isConnected={isConnected("light")}
             status={getStatus(sensorData.light?.light, 100, 1000)}
             description="Optimal: 200-800 lux"
+            colorTheme="yellow"
           />
 
           <SensorCard
             title="Water Temperature"
             value={sensorData.waterTemp?.value}
             unit="°C"
-            icon={<Thermometer className="h-4 w-4" />}
+            icon={isConnected("waterTemp") ? <span className="text-2xl">🌡️</span>: null}
             isConnected={isConnected("waterTemp")}
             status={getStatus(sensorData.waterTemp?.value, 18, 26)}
             description="Optimal: 20-24°C"
+            colorTheme="blue"
           />
 
           <SensorCard
             title="Water Level"
             value={sensorData.waterLevel?.value}
             unit="%"
-            icon={<Droplets className="h-4 w-4" />}
+            icon={isConnected("waterLevel") ? <span className="text-2xl">💧</span>: null}
             isConnected={isConnected("waterLevel")}
             status={getStatus(sensorData.waterLevel?.value, 70, 100)}
             description="Optimal: 80-95%"
+            colorTheme="cyan"
           />
 
           <SensorCard
             title="pH Level"
             value={sensorData.pH?.value}
             unit=""
-            icon={<FlaskConical className="h-4 w-4" />}
+            icon={isConnected("pH") ? <span className="text-2xl">🧪</span> : null}
             isConnected={isConnected("pH")}
             status={getStatus(sensorData.pH?.value, 6.0, 7.5)}
             description="Optimal: 6.5-7.0"
+            colorTheme="green"
           />
 
           <SensorCard
             title="Dissolved Oxygen"
             value={sensorData.dissolvedOxygen?.value}
             unit=" mg/L"
-            icon={<Waves className="h-4 w-4" />}
+            icon={isConnected("dissolvedOxygen") ? <span className="text-2xl">🌊</span>: null}
             isConnected={isConnected("dissolvedOxygen")}
             status={getStatus(sensorData.dissolvedOxygen?.value, 5, 15)}
             description="Optimal: 6-8 mg/L"
+            colorTheme="teal"
           />
 
           <SensorCard
             title="Nutrient Level (EC)"
             value={sensorData.nutrientLevel?.value}
             unit=" mS/cm"
-            icon={<Zap className="h-4 w-4" />}
+            icon={isConnected("nutrientLevel") ? <span className="text-2xl">⚡</span> : null}
             isConnected={isConnected("nutrientLevel")}
             status={getStatus(sensorData.nutrientLevel?.value, 1.2, 2.0)}
             description="Optimal: 1.4-1.8 mS/cm"
+            colorTheme="purple"
           />
 
           <SensorCard
             title="Air Temperature"
             value={sensorData.airTemp?.value}
             unit="°C"
-            icon={<Thermometer className="h-4 w-4" />}
+            icon={isConnected("airTemp") ? <span className="text-2xl">🌡️</span> : null}
             isConnected={isConnected("airTemp")}
             status={getStatus(sensorData.airTemp?.value, 18, 28)}
             description="Optimal: 20-25°C"
+            colorTheme="orange"
           />
 
           <SensorCard
             title="Humidity"
             value={sensorData.humidity?.value}
             unit="%"
-            icon={<Wind className="h-4 w-4" />}
+            icon={isConnected("humidity") ?<span className="text-2xl">💨</span> : null}
             isConnected={isConnected("humidity")}
             status={getStatus(sensorData.humidity?.value, 50, 80)}
             description="Optimal: 60-70%"
+            colorTheme="indigo"
           />
 
           <SensorCard
             title="Water Flow Rate"
             value={sensorData.flowRate?.value}
             unit=" L/min"
-            icon={<Gauge className="h-4 w-4" />}
+            icon={isConnected("flowRate") ? <span className="text-2xl">📊</span> : null}
             isConnected={isConnected("flowRate")}
             status={getStatus(sensorData.flowRate?.value, 2, 8)}
             description="Optimal: 3-6 L/min"
+            colorTheme="pink"
           />
         </div>
       </main>
