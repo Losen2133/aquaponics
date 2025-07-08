@@ -110,7 +110,7 @@ export default function Dashboard() {
       <TitleSetter title="Aquaponics Dashboard" />
 
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm">
+      <div className="border-b bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -135,7 +135,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {/* System Overview */}
-        <Card className="mb-8 bg-white/80 backdrop-blur-sm">
+        <Card className="mb-8 bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span className="text-blue-500">📊</span>
@@ -169,6 +169,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Sensor Grid */}
+        { /* Remind me to make schematic diagrams for modules  */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <SensorCard
             title="Light Level"
