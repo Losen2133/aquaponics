@@ -6,18 +6,7 @@ import TitleSetter from "@/components/utilities/titlesetter"
 import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
-interface SensorData {
-  light?: { value: number; light: number; timestamp: Date }
-  waterTemp?: { value: number; timestamp: Date }
-  waterLevel?: { value: number; timestamp: Date }
-  pH?: { value: number; timestamp: Date }
-  dissolvedOxygen?: { value: number; timestamp: Date }
-  nutrientLevel?: { value: number; timestamp: Date }
-  airTemp?: { value: number; timestamp: Date }
-  humidity?: { value: number; timestamp: Date }
-  flowRate?: { value: number; timestamp: Date }
-}
+import type { SensorData } from "@/interfaces/interfaces"
 
 export default function Dashboard() {
   const [sensorData, setSensorData] = useState<SensorData>({})
@@ -58,23 +47,45 @@ export default function Dashboard() {
 
     client.on("message", (topic, message) => {
       try {
-        const topicParts = topic.split("/")
-        const sensorType = topicParts[1]
-        const data = JSON.parse(message.toString())
+        const topicParts = topic.split("/");
+        let sensorType = topicParts[1];
+
+        // Map MQTT topic sensor type to dashboard sensorData key
+        const typeMap: Record<string, keyof SensorData> = {
+          ldr: "light",
+          "water-temp": "waterTemp",
+          "water-level": "waterLevel",
+          ph: "pH",
+          "dissolved-oxygen": "dissolvedOxygen",
+          "nutrient-level": "nutrientLevel",
+          "air-temp": "airTemp",
+          humidity: "humidity",
+          "flow-rate": "flowRate",
+        };
+
+        const mappedType = typeMap[sensorType];
+
+        if (!mappedType) {
+          console.warn("❌ Unknown sensor type:", sensorType);
+          return;
+        }
+
+        const data = JSON.parse(message.toString());
 
         setSensorData((prev) => ({
           ...prev,
-          [sensorType.replace("-", "")]: {
+          [mappedType]: {
             ...data,
-            timestamp: new Date(),
+            timestamp: Date.now(),
           },
-        }))
+        }));
 
-        setLastUpdate(new Date())
+        setLastUpdate(new Date());
       } catch (err) {
-        console.error("❌ Invalid JSON received:", message.toString())
+        console.error("❌ Invalid JSON received:", message.toString());
       }
-    })
+    });
+
 
     client.on("error", (err) => {
       console.error("MQTT connection error:", err)
@@ -101,7 +112,7 @@ export default function Dashboard() {
   const isConnected = (sensorType: keyof SensorData) => {
     const sensor = sensorData[sensorType]
     if (!sensor) return false
-    const timeDiff = new Date().getTime() - sensor.timestamp.getTime()
+    const timeDiff = Date.now() - sensor.timestamp
     return timeDiff < 30000 // Consider connected if data is less than 30 seconds old
   }
 
@@ -173,7 +184,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <SensorCard
             title="Light Level"
-            value={sensorData.light?.light}
+            value={sensorData.light?.light ?? null}
             unit=" lux"
             icon={isConnected("light") ? <span className="text-2xl">💡</span>: null}
             isConnected={isConnected("light")}
@@ -184,7 +195,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="Water Temperature"
-            value={sensorData.waterTemp?.value}
+            value={sensorData.waterTemp?.value ?? null}
             unit="°C"
             icon={isConnected("waterTemp") ? <span className="text-2xl">🌡️</span>: null}
             isConnected={isConnected("waterTemp")}
@@ -195,7 +206,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="Water Level"
-            value={sensorData.waterLevel?.value}
+            value={sensorData.waterLevel?.value ?? null}
             unit="%"
             icon={isConnected("waterLevel") ? <span className="text-2xl">💧</span>: null}
             isConnected={isConnected("waterLevel")}
@@ -206,7 +217,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="pH Level"
-            value={sensorData.pH?.value}
+            value={sensorData.pH?.value ?? null}
             unit=""
             icon={isConnected("pH") ? <span className="text-2xl">🧪</span> : null}
             isConnected={isConnected("pH")}
@@ -217,7 +228,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="Dissolved Oxygen"
-            value={sensorData.dissolvedOxygen?.value}
+            value={sensorData.dissolvedOxygen?.value ?? null}
             unit=" mg/L"
             icon={isConnected("dissolvedOxygen") ? <span className="text-2xl">🌊</span>: null}
             isConnected={isConnected("dissolvedOxygen")}
@@ -228,7 +239,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="Nutrient Level (EC)"
-            value={sensorData.nutrientLevel?.value}
+            value={sensorData.nutrientLevel?.value ?? null}
             unit=" mS/cm"
             icon={isConnected("nutrientLevel") ? <span className="text-2xl">⚡</span> : null}
             isConnected={isConnected("nutrientLevel")}
@@ -239,7 +250,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="Air Temperature"
-            value={sensorData.airTemp?.value}
+            value={sensorData.airTemp?.value ?? null}
             unit="°C"
             icon={isConnected("airTemp") ? <span className="text-2xl">🌡️</span> : null}
             isConnected={isConnected("airTemp")}
@@ -250,7 +261,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="Humidity"
-            value={sensorData.humidity?.value}
+            value={sensorData.humidity?.value ?? null}
             unit="%"
             icon={isConnected("humidity") ?<span className="text-2xl">💨</span> : null}
             isConnected={isConnected("humidity")}
@@ -261,7 +272,7 @@ export default function Dashboard() {
 
           <SensorCard
             title="Water Flow Rate"
-            value={sensorData.flowRate?.value}
+            value={sensorData.flowRate?.value ?? null}
             unit=" L/min"
             icon={isConnected("flowRate") ? <span className="text-2xl">📊</span> : null}
             isConnected={isConnected("flowRate")}
