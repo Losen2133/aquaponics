@@ -12,7 +12,7 @@ import Camera from './pages/Camera'
 import About from './pages/About';
 import Maintenance from './pages/Maintenance';
 import Solar from './pages/Solar-Panel';
-
+import LivestockPage from './pages/Plants-Fish';
 const router = createBrowserRouter([
   {
     path: '/',
@@ -41,6 +41,10 @@ const router = createBrowserRouter([
       {
         path: 'solar-panel',
         element: <Solar />
+      },
+      {
+        path: 'livestock',
+        element: <LivestockPage />
       },
     ],
   },

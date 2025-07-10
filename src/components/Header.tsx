@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboardIcon, Video, Info, Construction, Zap, Battery, BatteryMedium, BatteryFull } from 'lucide-react';
+import { LayoutDashboardIcon, Video, Info, Construction, Zap, Battery, BatteryMedium, BatteryFull, FishIcon } from 'lucide-react';
 
 const Header = () => {
   const { pathname } = useLocation();
@@ -64,6 +64,14 @@ const Header = () => {
           >
             <Construction />
             Maintenance
+          </Button>
+          <Button
+            variant="ghost"
+            className={linkStyle('/livestock')}
+            onClick={() => navigate('/livestock')}
+          >
+            <FishIcon />
+            Livestock
           </Button>
           <Button
             variant="ghost"
