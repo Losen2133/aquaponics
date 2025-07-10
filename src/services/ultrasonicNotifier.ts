@@ -10,8 +10,14 @@ export function handleUltrasonicData(payload: string) {
     const distanceCm = parseFloat(data.value_cm)
 
     const now = Date.now()
+    const nowStr = new Date(now).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+
     if (distanceCm < 10 && now - lastAlertTime > 10000) {
-      toast.warning(`⚠️ Motion Detected: Object is ${distanceCm.toFixed(1)} cm away`, {
+      toast.warning(`⚠️ Motion Detected at ${nowStr}: Object is ${distanceCm.toFixed(1)} cm away`, {
         position: "top-right",
         autoClose: 5000,
       })

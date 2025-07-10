@@ -291,7 +291,7 @@ export default function Dashboard() {
       </main>
 
       {/* ✅ Toasts */}
-      <ToastContainer />
+      <ToastContainer position="bottom-right" />
     </div>
   )
 }
