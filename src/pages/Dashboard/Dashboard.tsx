@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react"
 import mqtt from "mqtt"
+import { toast, ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
+
 import TitleSetter from "@/components/utilities/titlesetter"
 import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { SensorData } from "@/interfaces/interfaces"
+import { handleUltrasonicData } from "@/services/ultrasonicNotifier" // ✅ Import modularized logic
 
 export default function Dashboard() {
   const [sensorData, setSensorData] = useState<SensorData>({})
@@ -21,7 +25,6 @@ export default function Dashboard() {
       console.log("✅ MQTT connected")
       setConnectionStatus("connected")
 
-      // Subscribe to all sensor topics
       const topics = [
         "sensor/ldr/#",
         "sensor/water-temp/#",
@@ -32,6 +35,7 @@ export default function Dashboard() {
         "sensor/air-temp/#",
         "sensor/humidity/#",
         "sensor/flow-rate/#",
+        "sensor/ultrasonic/#" // ✅ Include ultrasonic
       ]
 
       topics.forEach((topic) => {
@@ -47,10 +51,15 @@ export default function Dashboard() {
 
     client.on("message", (topic, message) => {
       try {
-        const topicParts = topic.split("/");
-        let sensorType = topicParts[1];
+        const topicParts = topic.split("/")
+        const sensorType = topicParts[1]
 
-        // Map MQTT topic sensor type to dashboard sensorData key
+        // ✅ Modular ultrasonic handler
+        if (sensorType === "ultrasonic") {
+          handleUltrasonicData(message.toString())
+          return
+        }
+
         const typeMap: Record<string, keyof SensorData> = {
           ldr: "light",
           "water-temp": "waterTemp",
@@ -60,32 +69,30 @@ export default function Dashboard() {
           "nutrient-level": "nutrientLevel",
           "air-temp": "airTemp",
           humidity: "humidity",
-          "flow-rate": "flowRate",
-        };
-
-        const mappedType = typeMap[sensorType];
-
-        if (!mappedType) {
-          console.warn("❌ Unknown sensor type:", sensorType);
-          return;
+          "flow-rate": "flowRate"
         }
 
-        const data = JSON.parse(message.toString());
+        const mappedType = typeMap[sensorType]
+        if (!mappedType) {
+          console.warn("❌ Unknown sensor type:", sensorType)
+          return
+        }
+
+        const data = JSON.parse(message.toString())
 
         setSensorData((prev) => ({
           ...prev,
           [mappedType]: {
             ...data,
             timestamp: Date.now(),
-          },
-        }));
+          }
+        }))
 
-        setLastUpdate(new Date());
+        setLastUpdate(new Date())
       } catch (err) {
-        console.error("❌ Invalid JSON received:", message.toString());
+        console.error("❌ Invalid JSON received:", message.toString())
       }
-    });
-
+    })
 
     client.on("error", (err) => {
       console.error("MQTT connection error:", err)
@@ -113,7 +120,7 @@ export default function Dashboard() {
     const sensor = sensorData[sensorType]
     if (!sensor) return false
     const timeDiff = Date.now() - sensor.timestamp
-    return timeDiff < 30000 // Consider connected if data is less than 30 seconds old
+    return timeDiff < 30000
   }
 
   return (
@@ -145,7 +152,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* System Overview */}
         <Card className="mb-8 bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -162,7 +168,7 @@ export default function Dashboard() {
                 <div className="text-sm text-gray-600">Active Sensors</div>
               </div>
               <div className="text-center">
-                <div className={connectionStatus === "connected" ? "text-2xl font-bold text-green-600" : "text-2xl font-bold text-red-600"} text-2xl font-bold>
+                <div className={connectionStatus === "connected" ? "text-2xl font-bold text-green-600" : "text-2xl font-bold text-red-600"}>
                   {connectionStatus === "connected" ? "Online" : "Offline"}
                 </div>
                 <div className="text-sm text-gray-600">System Status</div>
@@ -179,6 +185,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Sensor Cards */}
         {/* Sensor Grid */}
         { /* Remind me to make schematic diagrams for modules  */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -282,6 +289,9 @@ export default function Dashboard() {
           />
         </div>
       </main>
+
+      {/* ✅ Toasts */}
+      <ToastContainer />
     </div>
   )
 }
