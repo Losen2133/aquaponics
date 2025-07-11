@@ -1,113 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import mqtt from "mqtt"
-import { toast, ToastContainer } from "react-toastify"
+import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 
 import TitleSetter from "@/components/utilities/titlesetter"
 import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useMqtt } from "@/contexts/MQTTContext"
 import type { SensorData } from "@/interfaces/interfaces"
-import { handleUltrasonicData } from "@/services/ultrasonicNotifier" // ✅ Import modularized logic
 
 export default function Dashboard() {
-  const [sensorData, setSensorData] = useState<SensorData>({})
-  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting")
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-
-  useEffect(() => {
-    const brokerUrl = "ws://localhost:9001"
-    const client = mqtt.connect(brokerUrl)
-
-    client.on("connect", () => {
-      console.log("✅ MQTT connected")
-      setConnectionStatus("connected")
-
-      const topics = [
-        "sensor/ldr/#",
-        "sensor/water-temp/#",
-        "sensor/water-level/#",
-        "sensor/ph/#",
-        "sensor/dissolved-oxygen/#",
-        "sensor/nutrient-level/#",
-        "sensor/air-temp/#",
-        "sensor/humidity/#",
-        "sensor/flow-rate/#",
-        "sensor/ultrasonic/#" // ✅ Include ultrasonic
-      ]
-
-      topics.forEach((topic) => {
-        client.subscribe(topic, (err) => {
-          if (err) {
-            console.error(`❌ Failed to subscribe to ${topic}:`, err)
-          } else {
-            console.log(`📡 Subscribed to ${topic}`)
-          }
-        })
-      })
-    })
-
-    client.on("message", (topic, message) => {
-      try {
-        const topicParts = topic.split("/")
-        const sensorType = topicParts[1]
-
-        // ✅ Modular ultrasonic handler
-        if (sensorType === "ultrasonic") {
-          handleUltrasonicData(message.toString())
-          return
-        }
-
-        const typeMap: Record<string, keyof SensorData> = {
-          ldr: "light",
-          "water-temp": "waterTemp",
-          "water-level": "waterLevel",
-          ph: "pH",
-          "dissolved-oxygen": "dissolvedOxygen",
-          "nutrient-level": "nutrientLevel",
-          "air-temp": "airTemp",
-          humidity: "humidity",
-          "flow-rate": "flowRate"
-        }
-
-        const mappedType = typeMap[sensorType]
-        if (!mappedType) {
-          console.warn("❌ Unknown sensor type:", sensorType)
-          return
-        }
-
-        const data = JSON.parse(message.toString())
-
-        setSensorData((prev) => ({
-          ...prev,
-          [mappedType]: {
-            ...data,
-            timestamp: Date.now(),
-          }
-        }))
-
-        setLastUpdate(new Date())
-      } catch (err) {
-        console.error("❌ Invalid JSON received:", message.toString())
-      }
-    })
-
-    client.on("error", (err) => {
-      console.error("MQTT connection error:", err)
-      setConnectionStatus("disconnected")
-    })
-
-    client.on("close", () => {
-      console.warn("🔌 MQTT connection closed")
-      setConnectionStatus("disconnected")
-    })
-
-    return () => {
-      client.end()
-    }
-  }, [])
+  const { sensorData, connectionStatus, lastUpdate } = useMqtt()
 
   const getStatus = (value: number | undefined, min: number, max: number) => {
     if (value === undefined) return "normal"
@@ -186,14 +90,12 @@ export default function Dashboard() {
         </Card>
 
         {/* Sensor Cards */}
-        {/* Sensor Grid */}
-        { /* Remind me to make schematic diagrams for modules  */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <SensorCard
             title="Light Level"
             value={sensorData.light?.light ?? null}
             unit=" lux"
-            icon={isConnected("light") ? <span className="text-2xl">💡</span>: null}
+            icon={isConnected("light") ? <span className="text-2xl">💡</span> : null}
             isConnected={isConnected("light")}
             status={getStatus(sensorData.light?.light, 100, 1000)}
             description="Optimal: 200-800 lux"
@@ -204,7 +106,7 @@ export default function Dashboard() {
             title="Water Temperature"
             value={sensorData.waterTemp?.value ?? null}
             unit="°C"
-            icon={isConnected("waterTemp") ? <span className="text-2xl">🌡️</span>: null}
+            icon={isConnected("waterTemp") ? <span className="text-2xl">🌡️</span> : null}
             isConnected={isConnected("waterTemp")}
             status={getStatus(sensorData.waterTemp?.value, 18, 26)}
             description="Optimal: 20-24°C"
@@ -215,7 +117,7 @@ export default function Dashboard() {
             title="Water Level"
             value={sensorData.waterLevel?.value ?? null}
             unit="%"
-            icon={isConnected("waterLevel") ? <span className="text-2xl">💧</span>: null}
+            icon={isConnected("waterLevel") ? <span className="text-2xl">💧</span> : null}
             isConnected={isConnected("waterLevel")}
             status={getStatus(sensorData.waterLevel?.value, 70, 100)}
             description="Optimal: 80-95%"
@@ -237,7 +139,7 @@ export default function Dashboard() {
             title="Dissolved Oxygen"
             value={sensorData.dissolvedOxygen?.value ?? null}
             unit=" mg/L"
-            icon={isConnected("dissolvedOxygen") ? <span className="text-2xl">🌊</span>: null}
+            icon={isConnected("dissolvedOxygen") ? <span className="text-2xl">🌊</span> : null}
             isConnected={isConnected("dissolvedOxygen")}
             status={getStatus(sensorData.dissolvedOxygen?.value, 5, 15)}
             description="Optimal: 6-8 mg/L"
@@ -270,7 +172,7 @@ export default function Dashboard() {
             title="Humidity"
             value={sensorData.humidity?.value ?? null}
             unit="%"
-            icon={isConnected("humidity") ?<span className="text-2xl">💨</span> : null}
+            icon={isConnected("humidity") ? <span className="text-2xl">💨</span> : null}
             isConnected={isConnected("humidity")}
             status={getStatus(sensorData.humidity?.value, 50, 80)}
             description="Optimal: 60-70%"
@@ -290,7 +192,6 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* ✅ Toasts */}
       <ToastContainer position="bottom-right" />
     </div>
   )
