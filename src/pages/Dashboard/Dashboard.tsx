@@ -40,14 +40,14 @@ export default function Dashboard() {
               <p className="text-gray-600">Real-time monitoring of your aquaponics system</p>
             </div>
             <div className="flex items-center gap-4">
-              <Badge variant={connectionStatus === "connected" ? "default" : "destructive"} className="gap-2">
+              {/* <Badge variant={connectionStatus === "connected" ? "default" : "destructive"} className="gap-2">
                 <div
                   className={`w-2 h-2 rounded-full ${
                     connectionStatus === "connected" ? "bg-green-500" : "bg-red-500"
                   } animate-pulse`}
                 />
                 {connectionStatus === "connected" ? "Connected" : "Disconnected"}
-              </Badge>
+              </Badge> */}
               {lastUpdate && <p className="text-sm text-gray-500">Last update: {lastUpdate.toLocaleTimeString()}</p>}
             </div>
           </div>
