@@ -20,7 +20,8 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const API_BASE = "http://localhost:8000"; // Adjust as needed
+  // const API_BASE = "http://localhost:8000";
+  const API_BASE = "http://147.185.221.30:15477";
 
   // Fetch notifications on mount
   useEffect(() => {
