@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboardIcon, Video, Info, Construction, Zap, Battery, BatteryMedium, BatteryFull, FishIcon } from 'lucide-react';
+import NotificationBell from '@/components/ui/NotificationBell';
+
 
 const Header = () => {
   const { pathname } = useLocation();
@@ -11,8 +13,8 @@ const Header = () => {
   const linkStyle = (path: string) =>
     `px-4 py-2 rounded-md font-medium transition-colors ${
       pathname === path
-        ? 'bg-gray-100'
-        : 'bg-gray-100 text-gray-700 hover:bg-gray-300 hover:text-gray-900'
+        ? 'bg-gray-200'
+        : 'bg-gray-20 text-gray-700 hover:bg-gray-300 hover:text-gray-900'
     }`;
 
   return (
@@ -81,6 +83,9 @@ const Header = () => {
             <Info />
             About
           </Button>
+
+          <NotificationBell />
+
         </nav>
       </span>
     </header>

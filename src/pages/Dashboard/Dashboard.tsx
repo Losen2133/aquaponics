@@ -6,7 +6,6 @@ import "react-toastify/dist/ReactToastify.css"
 import TitleSetter from "@/components/utilities/titlesetter"
 import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { useMqtt } from "@/contexts/MQTTContext"
 import type { SensorData } from "@/interfaces/interfaces"
 
@@ -189,6 +188,7 @@ export default function Dashboard() {
             description="Optimal: 3-6 L/min"
             colorTheme="pink"
           />
+
         </div>
       </main>
 
