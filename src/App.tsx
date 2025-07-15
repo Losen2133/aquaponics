@@ -5,13 +5,14 @@ import { NotificationProvider } from "@/contexts/notificationContext"
 
 export default function App() {
   return (
-    <MqttProvider>
     <NotificationProvider>
+    <MqttProvider>
       <Header />
       <main>
         <Outlet />
       </main>
-    </NotificationProvider>
     </MqttProvider>
+    </NotificationProvider>
+
   )
 }

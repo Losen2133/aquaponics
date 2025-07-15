@@ -1,40 +1,44 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useEffect, useState } from "react"
-import mqtt from "mqtt"
-import type { MqttClient } from "mqtt" // <-- type-only import
-import { handleUltrasonicData } from "@/services/ultrasonicNotifier"
-import type { SensorData } from "@/interfaces/interfaces"
+import { createContext, useContext, useEffect, useState } from "react";
+import mqtt from "mqtt";
+import type { MqttClient } from "mqtt";
+import { useUltrasonicNotifier } from "@/services/ultrasonicNotifier";
+import type { SensorData } from "@/interfaces/interfaces";
 
 type MqttContextType = {
-  client: MqttClient | null
-  sensorData: SensorData
-  connectionStatus: "connected" | "disconnected" | "connecting"
-  lastUpdate: Date | null
-}
+  client: MqttClient | null;
+  sensorData: SensorData;
+  connectionStatus: "connected" | "disconnected" | "connecting";
+  lastUpdate: Date | null;
+};
 
-const MqttContext = createContext<MqttContextType | undefined>(undefined)
+const MqttContext = createContext<MqttContextType | undefined>(undefined);
 
 export const useMqtt = () => {
-  const context = useContext(MqttContext)
-  if (!context) throw new Error("useMqtt must be used within MqttProvider")
-  return context
-}
+  const context = useContext(MqttContext);
+  if (!context) throw new Error("useMqtt must be used within MqttProvider");
+  return context;
+};
 
 export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
-  const [client, setClient] = useState<MqttClient | null>(null)
-  const [sensorData, setSensorData] = useState<SensorData>({} as SensorData) // ✅ Type assertion for empty object
-  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting")
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [client, setClient] = useState<MqttClient | null>(null);
+  const [sensorData, setSensorData] = useState<SensorData>({} as SensorData);
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connected" | "disconnected" | "connecting"
+  >("connecting");
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  const { handleUltrasonicData } = useUltrasonicNotifier(); // ✅ Moved here
 
   useEffect(() => {
-    const brokerUrl = "ws://147.185.221.30:6067"
-    const mqttClient = mqtt.connect(brokerUrl)
+    const brokerUrl = "ws://147.185.221.30:6067";
+    const mqttClient = mqtt.connect(brokerUrl);
 
-    setClient(mqttClient)
+    setClient(mqttClient);
 
     mqttClient.on("connect", () => {
-      setConnectionStatus("connected")
+      setConnectionStatus("connected");
 
       const topics = [
         "sensor/ldr/#",
@@ -46,21 +50,21 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         "sensor/air-temp/#",
         "sensor/humidity/#",
         "sensor/flow-rate/#",
-        "sensor/ultrasonic/#"
-      ]
+        "sensor/ultrasonic/#",
+      ];
 
       topics.forEach((topic) => {
-        mqttClient.subscribe(topic)
-      })
-    })
+        mqttClient.subscribe(topic);
+      });
+    });
 
     mqttClient.on("message", (topic, message) => {
-      const parts = topic.split("/")
-      const type = parts[1]
+      const parts = topic.split("/");
+      const type = parts[1];
 
       if (type === "ultrasonic") {
-        handleUltrasonicData(message.toString())
-        return
+        handleUltrasonicData(message.toString());
+        return;
       }
 
       const typeMap: Record<string, keyof SensorData> = {
@@ -72,38 +76,38 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         "nutrient-level": "nutrientLevel",
         "air-temp": "airTemp",
         humidity: "humidity",
-        "flow-rate": "flowRate"
-      }
+        "flow-rate": "flowRate",
+      };
 
-      const mapped = typeMap[type]
-      if (!mapped) return
+      const mapped = typeMap[type];
+      if (!mapped) return;
 
       try {
-        const parsed = JSON.parse(message.toString())
+        const parsed = JSON.parse(message.toString());
         setSensorData((prev) => ({
           ...prev,
           [mapped]: {
             ...parsed,
-            timestamp: Date.now()
-          }
-        }))
-        setLastUpdate(new Date())
+            timestamp: Date.now(),
+          },
+        }));
+        setLastUpdate(new Date());
       } catch (err) {
-        console.error("Invalid JSON from", topic, message.toString())
+        console.error("Invalid JSON from", topic, message.toString());
       }
-    })
+    });
 
-    mqttClient.on("close", () => setConnectionStatus("disconnected"))
-    mqttClient.on("error", () => setConnectionStatus("disconnected"))
+    mqttClient.on("close", () => setConnectionStatus("disconnected"));
+    mqttClient.on("error", () => setConnectionStatus("disconnected"));
 
     return () => {
-      mqttClient.end()
-    }
-  }, [])
+      mqttClient.end();
+    };
+  }, [handleUltrasonicData]);
 
   return (
     <MqttContext.Provider value={{ client, sensorData, connectionStatus, lastUpdate }}>
       {children}
     </MqttContext.Provider>
-  )
-}
+  );
+};
