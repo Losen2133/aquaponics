@@ -8,7 +8,8 @@ const NotificationBell = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const hasUnread = notifications.some((n) => !n.read);
+  // Fix this line to use is_read (matches your Notification interface)
+  const hasUnread = notifications.some((n) => !n.is_read);
   const Icon = showDropdown || isHovered ? BellRing : Bell;
 
   return (
@@ -17,7 +18,6 @@ const NotificationBell = () => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* ✅ Use your shared Button component to match nav buttons */}
       <Button
         variant="ghost"
         onClick={() => setShowDropdown(!showDropdown)}
@@ -26,12 +26,11 @@ const NotificationBell = () => {
         <Icon className="w-5 h-5" />
         {hasUnread && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            {notifications.filter((n) => !n.read).length}
+            {notifications.filter((n) => !n.is_read).length}
           </span>
         )}
       </Button>
 
-      {/* Dropdown */}
       {showDropdown && (
         <div className="absolute right-0 mt-2 w-72 bg-white border rounded shadow-md z-10">
           <div className="flex justify-between items-center px-3 py-2 border-b">
@@ -51,7 +50,7 @@ const NotificationBell = () => {
                 <li
                   key={n.id}
                   className={`px-3 py-2 text-sm ${
-                    n.read ? "text-gray-500" : "font-semibold"
+                    n.is_read ? "text-gray-500" : "font-semibold"
                   }`}
                 >
                   {n.message}
@@ -63,6 +62,7 @@ const NotificationBell = () => {
       )}
     </div>
   );
+  
 };
-
 export default NotificationBell;
+
