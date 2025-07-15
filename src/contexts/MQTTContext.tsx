@@ -3,8 +3,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import mqtt from "mqtt";
 import type { MqttClient } from "mqtt";
-import { useUltrasonicNotifier } from "@/services/ultrasonicNotifier";
 import type { SensorData } from "@/interfaces/interfaces";
+import { useUltrasonicNotifier } from "@/services/ultrasonicNotifier";
 
 type MqttContextType = {
   client: MqttClient | null;
@@ -29,9 +29,17 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
   >("connecting");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  const { handleUltrasonicData } = useUltrasonicNotifier(); // ✅ Moved here
+  const [handleUltrasonicData, setHandleUltrasonicData] = useState<((payload: string) => void) | null>(null);
+
+  // Defer the hook until after NotificationProvider is mounted
+  useEffect(() => {
+    const { handleUltrasonicData } = useUltrasonicNotifier();
+    setHandleUltrasonicData(() => handleUltrasonicData);
+  }, []);
 
   useEffect(() => {
+    if (!handleUltrasonicData) return;
+
     const brokerUrl = "ws://147.185.221.30:6067";
     const mqttClient = mqtt.connect(brokerUrl);
 
@@ -53,9 +61,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         "sensor/ultrasonic/#",
       ];
 
-      topics.forEach((topic) => {
-        mqttClient.subscribe(topic);
-      });
+      topics.forEach((topic) => mqttClient.subscribe(topic));
     });
 
     mqttClient.on("message", (topic, message) => {
