@@ -4,7 +4,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import mqtt from "mqtt";
 import type { MqttClient } from "mqtt";
 import type { SensorData } from "@/interfaces/interfaces";
-import { useUltrasonicNotifier } from "@/services/ultrasonicNotifier";
+import { handleUltrasonicData } from "@/services/ultrasonicNotifier";
+import { useNotifications } from "@/contexts/notificationContext";
 
 type MqttContextType = {
   client: MqttClient | null;
@@ -24,30 +25,18 @@ export const useMqtt = () => {
 export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
   const [client, setClient] = useState<MqttClient | null>(null);
   const [sensorData, setSensorData] = useState<SensorData>({} as SensorData);
-  const [connectionStatus, setConnectionStatus] = useState<
-    "connected" | "disconnected" | "connecting"
-  >("connecting");
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  const [handleUltrasonicData, setHandleUltrasonicData] = useState<((payload: string) => void) | null>(null);
-
-  // Defer the hook until after NotificationProvider is mounted
-  useEffect(() => {
-    const { handleUltrasonicData } = useUltrasonicNotifier();
-    setHandleUltrasonicData(() => handleUltrasonicData);
-  }, []);
+  const { addNotification } = useNotifications(); // ✅ SAFE to call directly now
 
   useEffect(() => {
-    if (!handleUltrasonicData) return;
-
     const brokerUrl = "ws://147.185.221.30:6067";
     const mqttClient = mqtt.connect(brokerUrl);
-
     setClient(mqttClient);
 
     mqttClient.on("connect", () => {
       setConnectionStatus("connected");
-
       const topics = [
         "sensor/ldr/#",
         "sensor/water-temp/#",
@@ -60,7 +49,6 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         "sensor/flow-rate/#",
         "sensor/ultrasonic/#",
       ];
-
       topics.forEach((topic) => mqttClient.subscribe(topic));
     });
 
@@ -69,9 +57,32 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
       const type = parts[1];
 
       if (type === "ultrasonic") {
-        handleUltrasonicData(message.toString());
+        try {
+          const data = JSON.parse(message.toString());
+          const distance = parseFloat(data.value_cm);
+          const now = Date.now();
+
+          // ✅ Always update sensorData to keep system online
+          setSensorData((prev) => ({
+            ...prev,
+            ultrasonic: {
+              distance,
+              timestamp: now,
+            },
+          }));
+          setLastUpdate(new Date(now));
+
+          // ✅ Trigger alerts only when needed
+          handleUltrasonicData(message.toString(), addNotification);
+        } catch (err) {
+          console.error("Invalid ultrasonic JSON:", message.toString());
+        }
         return;
       }
+
+
+
+
 
       const typeMap: Record<string, keyof SensorData> = {
         ldr: "light",
@@ -109,7 +120,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       mqttClient.end();
     };
-  }, [handleUltrasonicData]);
+  }, [addNotification]); // ✅ make sure to include as dependency
 
   return (
     <MqttContext.Provider value={{ client, sensorData, connectionStatus, lastUpdate }}>

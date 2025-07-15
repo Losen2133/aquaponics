@@ -14,4 +14,8 @@ export interface SensorData {
   airTemp?: { value: number; timestamp: number }
   humidity?: { value: number; timestamp: number }
   flowRate?: { value: number; timestamp: number }
+  ultrasonic?: {
+    distance: number;
+    timestamp: number;
+  };
 }

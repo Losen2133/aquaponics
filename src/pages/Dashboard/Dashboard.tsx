@@ -68,7 +68,7 @@ export default function Dashboard() {
                 <div className="text-2xl font-bold text-green-600">
                   {Object.values(sensorData).filter((sensor) => sensor).length}
                 </div>
-                <div className="text-sm text-gray-600">Active Sensors</div>
+                <div className="text-sm text-gray-600">Active Modules</div>
               </div>
               <div className="text-center">
                 <div className={connectionStatus === "connected" ? "text-2xl font-bold text-green-600" : "text-2xl font-bold text-red-600"}>
