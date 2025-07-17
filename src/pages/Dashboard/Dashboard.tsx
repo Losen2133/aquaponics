@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css"
 import TitleSetter from "@/components/utilities/titlesetter"
 import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import WeatherWidget from "@/services/useWeather"
 import { useMqtt } from "@/contexts/MQTTContext"
 import type { SensorData } from "@/interfaces/interfaces"
 
@@ -88,8 +89,19 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+
+      
         {/* Sensor Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+
+        <WeatherWidget
+         apiKey={import.meta.env.VITE_WEATHER_API_KEY}
+          city="Cebu City"
+          className="lg:col-span-1"
+        />
+
+
           <SensorCard
             title="Light Level"
             value={sensorData.light?.light ?? null}
@@ -192,7 +204,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <ToastContainer position="bottom-right" />
+      <ToastContainer />
     </div>
   )
 }
