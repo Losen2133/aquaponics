@@ -18,4 +18,5 @@ export interface SensorData {
     distance: number;
     timestamp: number;
   };
+  cameraStatus?: { status: string; timestamp: number }
 }

@@ -12,6 +12,12 @@ type MqttContextType = {
   sensorData: SensorData;
   connectionStatus: "connected" | "disconnected" | "connecting";
   lastUpdate: Date | null;
+  discoveredCameras: DiscoveredCamera[];
+};
+
+type DiscoveredCamera = {
+  id: string;
+  ip: string;
 };
 
 const MqttContext = createContext<MqttContextType | undefined>(undefined);
@@ -27,16 +33,19 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
   const [sensorData, setSensorData] = useState<SensorData>({} as SensorData);
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [discoveredCameras, setDiscoveredCameras] = useState<DiscoveredCamera[]>([]);
 
-  const { addNotification } = useNotifications(); 
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
-    const brokerUrl = "ws://147.185.221.30:6067";
+    const brokerUrl = "ws://192.168.254.187:6067";
     const mqttClient = mqtt.connect(brokerUrl);
     setClient(mqttClient);
 
     mqttClient.on("connect", () => {
+      console.log("✅ MQTT connected");
       setConnectionStatus("connected");
+
       const topics = [
         "sensor/ldr/#",
         "sensor/water-temp/#",
@@ -48,13 +57,37 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         "sensor/humidity/#",
         "sensor/flow-rate/#",
         "sensor/ultrasonic/#",
+        "cam/image/#",
+
+        // ✅ Subscribe to dynamic camera IPs
+        "cam/+/ip",
       ];
+
       topics.forEach((topic) => mqttClient.subscribe(topic));
     });
 
     mqttClient.on("message", (topic, message) => {
+      console.log(`[MQTT] Topic: ${topic}, Payload: ${message.toString()}`);
       const parts = topic.split("/");
       const type = parts[1];
+
+      // ✅ Handle discovered camera IPs
+      if (topic.startsWith("cam/") && topic.endsWith("/ip")) {
+        const id = parts[1]; // e.g., "cam1"
+        const ip = message.toString();
+
+        setDiscoveredCameras((prev) => {
+          const exists = prev.find((cam) => cam.id === id);
+          const updated = exists
+            ? prev.map((cam) => (cam.id === id ? { ...cam, ip } : cam))
+            : [...prev, { id, ip }];
+
+          console.log("📷 Updated discovered cameras:", updated);
+          return updated;
+        });
+
+        return;
+      }
 
       if (type === "ultrasonic") {
         try {
@@ -62,7 +95,6 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
           const distance = parseFloat(data.value_cm);
           const now = Date.now();
 
-          // Always update sensorData to keep system online
           setSensorData((prev) => ({
             ...prev,
             ultrasonic: {
@@ -72,17 +104,12 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
           }));
           setLastUpdate(new Date(now));
 
-          //  Trigger only when needed
           handleUltrasonicData(message.toString(), addNotification);
         } catch (err) {
-          console.error("Invalid ultrasonic JSON:", message.toString());
+          console.error("❌ Invalid ultrasonic JSON:", message.toString());
         }
         return;
       }
-
-
-
-
 
       const typeMap: Record<string, keyof SensorData> = {
         ldr: "light",
@@ -94,6 +121,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         "air-temp": "airTemp",
         humidity: "humidity",
         "flow-rate": "flowRate",
+        cam: "cameraStatus",
       };
 
       const mapped = typeMap[type];
@@ -110,12 +138,19 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         }));
         setLastUpdate(new Date());
       } catch (err) {
-        console.error("Invalid JSON from", topic, message.toString());
+        console.error("❌ Invalid JSON:", topic, message.toString());
       }
     });
 
-    mqttClient.on("close", () => setConnectionStatus("disconnected"));
-    mqttClient.on("error", () => setConnectionStatus("disconnected"));
+    mqttClient.on("close", () => {
+      console.warn("MQTT connection closed");
+      setConnectionStatus("disconnected");
+    });
+
+    mqttClient.on("error", (err) => {
+      console.error("MQTT connection error:", err);
+      setConnectionStatus("disconnected");
+    });
 
     return () => {
       mqttClient.end();
@@ -123,7 +158,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
   }, [addNotification]);
 
   return (
-    <MqttContext.Provider value={{ client, sensorData, connectionStatus, lastUpdate }}>
+    <MqttContext.Provider value={{ client, sensorData, connectionStatus, lastUpdate, discoveredCameras }}>
       {children}
     </MqttContext.Provider>
   );
