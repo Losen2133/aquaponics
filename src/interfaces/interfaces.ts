@@ -20,3 +20,4 @@ export interface SensorData {
   };
   cameraStatus?: { status: string; timestamp: number }
 }
+

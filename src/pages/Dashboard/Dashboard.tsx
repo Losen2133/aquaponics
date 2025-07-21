@@ -8,19 +8,13 @@ import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import WeatherWidget from "@/services/useWeather"
 import { useMqtt } from "@/contexts/MQTTContext"
-import type { SensorData } from "@/interfaces/interfaces"
+import { sensorKeys } from "@/lib/sensorMap"
+import { getStatus } from "@/lib/statusUtils"
 
 export default function Dashboard() {
   const { sensorData, connectionStatus, lastUpdate } = useMqtt()
 
-  const getStatus = (value: number | undefined, min: number, max: number) => {
-    if (value === undefined) return "normal"
-    if (value < min || value > max) return "critical"
-    if (value < min * 1.1 || value > max * 0.9) return "warning"
-    return "normal"
-  }
-
-  const isConnected = (sensorType: keyof SensorData) => {
+  const isConnected = (sensorType: keyof typeof sensorData) => {
     const sensor = sensorData[sensorType]
     if (!sensor) return false
     const timeDiff = Date.now() - sensor.timestamp
@@ -67,7 +61,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {Object.values(sensorData).filter((sensor) => sensor).length}
+                  {sensorKeys.filter(isConnected).length}
                 </div>
                 <div className="text-sm text-gray-600">Active Modules</div>
               </div>

@@ -2,22 +2,23 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import mqtt from "mqtt";
-import type { MqttClient } from "mqtt";
 import type { SensorData } from "@/interfaces/interfaces";
 import { handleUltrasonicData } from "@/services/ultrasonicNotifier";
 import { useNotifications } from "@/contexts/notificationContext";
-
-type MqttContextType = {
-  client: MqttClient | null;
-  sensorData: SensorData;
-  connectionStatus: "connected" | "disconnected" | "connecting";
-  lastUpdate: Date | null;
-  discoveredCameras: DiscoveredCamera[];
-};
+import { typeMap } from "@/lib/sensorMap";
 
 type DiscoveredCamera = {
   id: string;
   ip: string;
+  lastSeen: number;
+};
+
+type MqttContextType = {
+  client: ReturnType<typeof mqtt.connect> | null;
+  sensorData: SensorData;
+  connectionStatus: "connected" | "disconnected" | "connecting";
+  lastUpdate: Date | null;
+  discoveredCameras: DiscoveredCamera[];
 };
 
 const MqttContext = createContext<MqttContextType | undefined>(undefined);
@@ -29,104 +30,97 @@ export const useMqtt = () => {
 };
 
 export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
-  const [client, setClient] = useState<MqttClient | null>(null);
-  const [sensorData, setSensorData] = useState<SensorData>({} as SensorData);
+  const [client, setClient] = useState<ReturnType<typeof mqtt.connect> | null>(null);
+  const [sensorData, setSensorData] = useState<SensorData>({});
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [discoveredCameras, setDiscoveredCameras] = useState<DiscoveredCamera[]>([]);
 
   const { addNotification } = useNotifications();
 
+  // Modular sensor handlers
+  const sensorHandlers: Record<string, (message: Buffer) => void> = {
+    ultrasonic: (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        const distance = parseFloat(data.value_cm);
+        const now = Date.now();
+        setSensorData((prev) => ({
+          ...prev,
+          ultrasonic: { distance, timestamp: now },
+        }));
+        setLastUpdate(new Date(now));
+        handleUltrasonicData(message.toString(), addNotification);
+      } catch (err) {
+        console.error("Invalid ultrasonic JSON:", message.toString());
+      }
+    },
+    // Add more handlers as needed
+  };
+
   useEffect(() => {
     const brokerUrl = "ws://192.168.254.187:6067";
     const mqttClient = mqtt.connect(brokerUrl);
+
     setClient(mqttClient);
 
+    const topics = [
+      "sensor/ldr/#",
+      "sensor/water-temp/#",
+      "sensor/water-level/#",
+      "sensor/ph/#",
+      "sensor/dissolved-oxygen/#",
+      "sensor/nutrient-level/#",
+      "sensor/air-temp/#",
+      "sensor/humidity/#",
+      "sensor/flow-rate/#",
+      "sensor/ultrasonic/#",
+      "cam/image/#",
+      "cam/+/ip",
+    ];
+
     mqttClient.on("connect", () => {
-      console.log("✅ MQTT connected");
       setConnectionStatus("connected");
-
-      const topics = [
-        "sensor/ldr/#",
-        "sensor/water-temp/#",
-        "sensor/water-level/#",
-        "sensor/ph/#",
-        "sensor/dissolved-oxygen/#",
-        "sensor/nutrient-level/#",
-        "sensor/air-temp/#",
-        "sensor/humidity/#",
-        "sensor/flow-rate/#",
-        "sensor/ultrasonic/#",
-        "cam/image/#",
-
-        // ✅ Subscribe to dynamic camera IPs
-        "cam/+/ip",
-      ];
-
       topics.forEach((topic) => mqttClient.subscribe(topic));
     });
 
-    mqttClient.on("message", (topic, message) => {
-      console.log(`[MQTT] Topic: ${topic}, Payload: ${message.toString()}`);
+    mqttClient.on("message", (topic: string, message: Buffer) => {
       const parts = topic.split("/");
       const type = parts[1];
 
-      // ✅ Handle discovered camera IPs
+      // Camera IP handler
       if (topic.startsWith("cam/") && topic.endsWith("/ip")) {
-        const id = parts[1]; // e.g., "cam1"
+        const id = parts[1];
         const ip = message.toString();
-
         setDiscoveredCameras((prev) => {
+          const now = Date.now();
           const exists = prev.find((cam) => cam.id === id);
           const updated = exists
-            ? prev.map((cam) => (cam.id === id ? { ...cam, ip } : cam))
-            : [...prev, { id, ip }];
-
-          console.log("📷 Updated discovered cameras:", updated);
+            ? prev.map((cam) =>
+                cam.id === id ? { ...cam, ip, lastSeen: now } : cam
+              )
+            : [...prev, { id, ip, lastSeen: now }];
           return updated;
         });
-
+        setSensorData((prev) => ({
+          ...prev,
+          cameraStatus: {
+            status: "online",
+            timestamp: Date.now(),
+          },
+        }));
         return;
       }
 
-      if (type === "ultrasonic") {
-        try {
-          const data = JSON.parse(message.toString());
-          const distance = parseFloat(data.value_cm);
-          const now = Date.now();
-
-          setSensorData((prev) => ({
-            ...prev,
-            ultrasonic: {
-              distance,
-              timestamp: now,
-            },
-          }));
-          setLastUpdate(new Date(now));
-
-          handleUltrasonicData(message.toString(), addNotification);
-        } catch (err) {
-          console.error("❌ Invalid ultrasonic JSON:", message.toString());
-        }
+      // Modular sensor handlers
+      if (sensorHandlers[type]) {
+        sensorHandlers[type](message);
         return;
       }
 
-      const typeMap: Record<string, keyof SensorData> = {
-        ldr: "light",
-        "water-temp": "waterTemp",
-        "water-level": "waterLevel",
-        ph: "pH",
-        "dissolved-oxygen": "dissolvedOxygen",
-        "nutrient-level": "nutrientLevel",
-        "air-temp": "airTemp",
-        humidity: "humidity",
-        "flow-rate": "flowRate",
-        cam: "cameraStatus",
-      };
-
+      // Generic handler for other sensors
       const mapped = typeMap[type];
       if (!mapped) return;
-
       try {
         const parsed = JSON.parse(message.toString());
         setSensorData((prev) => ({
@@ -138,22 +132,22 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
         }));
         setLastUpdate(new Date());
       } catch (err) {
-        console.error("❌ Invalid JSON:", topic, message.toString());
+        console.error("Invalid JSON:", topic, message.toString());
       }
     });
 
     mqttClient.on("close", () => {
-      console.warn("MQTT connection closed");
       setConnectionStatus("disconnected");
     });
 
-    mqttClient.on("error", (err) => {
+    mqttClient.on("error", (err: Error) => {
       console.error("MQTT connection error:", err);
       setConnectionStatus("disconnected");
     });
 
     return () => {
-      mqttClient.end();
+      mqttClient.end(true);
+      setClient(null);
     };
   }, [addNotification]);
 
