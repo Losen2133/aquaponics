@@ -1,6 +1,6 @@
 "use client"
 
-import WeatherCard from "@/components/WeatherCard"
+import WeatherCard from "@/components/weather/WeatherCard"
 
 interface WeatherWidgetProps {
   apiKey: string

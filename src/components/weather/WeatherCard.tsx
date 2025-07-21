@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useWeather } from "@/contexts/WeatherContext"
+import AquaponicsAIAdvice  from "@/components/weather/WeatherAI"
 
 interface WeatherCardProps {
   apiKey: string
@@ -137,24 +138,12 @@ export default function WeatherCard({ apiKey, city, lat, lon, className = "" }: 
           </div>
         </div>
 
-        {/* Impact on Aquaponics */}
+        {/* Impact on Aquaponics: implement ai to do this */}
         <div className="bg-green-50 rounded-lg p-3">
-          <h4 className="font-medium text-green-800 mb-2">🌱 Aquaponics Impact</h4>
+          <h4 className="font-medium text-green-800 mb-2">Aquaponics Impact</h4>
           <div className="space-y-1 text-sm">
-            {weatherData.temperature < 15 && (
-              <p className="text-orange-600">• Consider heating - cold weather may affect water temperature</p>
-            )}
-            {weatherData.temperature > 30 && (
-              <p className="text-red-600">• Monitor cooling - high temperatures may stress fish</p>
-            )}
-            {weatherData.humidity < 50 && <p className="text-blue-600">• Low humidity - increase misting for plants</p>}
-            {weatherData.humidity > 80 && <p className="text-purple-600">• High humidity - ensure good ventilation</p>}
-            {weatherData.cloudCover > 70 && (
-              <p className="text-yellow-600">• Cloudy conditions - consider supplemental lighting</p>
-            )}
-            {weatherData.windSpeed > 36 && (
-              <p className="text-gray-600">• High winds - secure outdoor equipment</p>
-            )}
+            <AquaponicsAIAdvice weatherData={weatherData} />
+
           </div>
         </div>
 

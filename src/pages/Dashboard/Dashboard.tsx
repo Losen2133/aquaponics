@@ -2,14 +2,13 @@
 
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
-
 import TitleSetter from "@/components/utilities/titlesetter"
 import SensorCard from "@/components/SensorCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import WeatherWidget from "@/services/useWeather"
 import { useMqtt } from "@/contexts/MQTTContext"
 import { sensorKeys } from "@/lib/sensorMap"
 import { getStatus } from "@/lib/statusUtils"
+
 
 export default function Dashboard() {
   const { sensorData, connectionStatus, lastUpdate } = useMqtt()
@@ -53,7 +52,6 @@ export default function Dashboard() {
         <Card className="mb-8 bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <span className="text-blue-500">📊</span>
               System Overview
             </CardTitle>
           </CardHeader>
@@ -89,11 +87,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
 
-        <WeatherWidget
-         apiKey={import.meta.env.VITE_WEATHER_API_KEY}
-          city="Cebu City"
-          className="lg:col-span-1"
-        />
+       
 
 
           <SensorCard

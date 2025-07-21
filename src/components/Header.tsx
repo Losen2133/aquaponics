@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboardIcon, Video, Info, Construction, Zap, Battery, BatteryMedium, BatteryFull, FishIcon } from 'lucide-react';
 import NotificationBell from '@/components/ui/NotificationBell';
-
+import ExpandableWeather from './ExpandableWeather';
 
 const Header = () => {
   const { pathname } = useLocation();
@@ -18,11 +18,19 @@ const Header = () => {
     }`;
 
   return (
-    <header className="bg-white shadow-sm py-2 px-6 flex items-center justify-between rounded-b-lg">
+    <header  className="sticky top-0 z-50 bg-white shadow-sm py-2 px-6 flex items-center justify-between rounded-b-lg">
       <div className="text-2xl font-bold text-gray-900 flex items-center justify-center flex-row">
         <img src="/uranus.svg" alt="" height="50" width="50" className="mr-1" />
         U R A N U S
+        <div>
+          <ExpandableWeather
+              apiKey={import.meta.env.VITE_WEATHER_API_KEY}
+              city="Cebu City"
+              className="mx-2"
+            />
+        </div>
       </div>
+      
       <span>
         <div className="flex items-center justify-end px-2">
           <span className="text-sm ml-1 mr-1">{batteryPercentage}%</span>
@@ -35,6 +43,8 @@ const Header = () => {
           )}
         </div>
         <nav className="flex gap-2">
+
+          
           <Button
             variant="ghost"
             className={linkStyle('/dashboard')}
