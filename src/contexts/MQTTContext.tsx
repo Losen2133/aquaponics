@@ -28,7 +28,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  const { addNotification } = useNotifications(); // ✅ SAFE to call directly now
+  const { addNotification } = useNotifications(); 
 
   useEffect(() => {
     const brokerUrl = "ws://147.185.221.30:6067";
@@ -62,7 +62,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
           const distance = parseFloat(data.value_cm);
           const now = Date.now();
 
-          // ✅ Always update sensorData to keep system online
+          // Always update sensorData to keep system online
           setSensorData((prev) => ({
             ...prev,
             ultrasonic: {
@@ -72,7 +72,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
           }));
           setLastUpdate(new Date(now));
 
-          // ✅ Trigger alerts only when needed
+          //  Trigger only when needed
           handleUltrasonicData(message.toString(), addNotification);
         } catch (err) {
           console.error("Invalid ultrasonic JSON:", message.toString());
@@ -120,7 +120,7 @@ export const MqttProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       mqttClient.end();
     };
-  }, [addNotification]); // ✅ make sure to include as dependency
+  }, [addNotification]);
 
   return (
     <MqttContext.Provider value={{ client, sensorData, connectionStatus, lastUpdate }}>
